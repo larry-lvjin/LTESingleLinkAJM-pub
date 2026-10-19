@@ -1,0 +1,668 @@
+<Window x:Class="LTESingleLinkAJM.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
+        xmlns:vm="clr-namespace:LTESingleLinkAJM.ViewModels"
+        xmlns:conv="clr-namespace:LTESingleLinkAJM.Converters"
+        mc:Ignorable="d"
+        Title="LTE Single Link — 全自动测试"
+        Height="650" Width="1080"
+        MinHeight="600" MinWidth="1000"
+        Background="{StaticResource BgBrush}"
+        Foreground="{StaticResource TextBrush}"
+        WindowStyle="None"
+        AllowsTransparency="False"
+        ResizeMode="CanResize"
+        WindowStartupLocation="CenterScreen">
+    <shell:WindowChrome.WindowChrome>
+        <shell:WindowChrome CaptionHeight="30"
+                            ResizeBorderThickness="6"
+                            CornerRadius="0"
+                            GlassFrameThickness="0"
+                            UseAeroCaptionButtons="False"/>
+    </shell:WindowChrome.WindowChrome>
+    <Window.DataContext>
+        <vm:MainViewModel/>
+    </Window.DataContext>
+    <Window.Resources>
+        <conv:StatusToBrushConverter x:Key="StatusBrush"/>
+        <conv:BoolToBrushConverter x:Key="RowHighlight"/>
+        <conv:BoolToConnectionBrushConverter x:Key="ConnDotBrush"/>
+        <conv:BoolToBrushConverter x:Key="CapturedBrush">
+            <conv:BoolToBrushConverter.TrueBrush>
+                <SolidColorBrush Color="#66BB6A"/>
+            </conv:BoolToBrushConverter.TrueBrush>
+            <conv:BoolToBrushConverter.FalseBrush>
+                <SolidColorBrush Color="#90A4AE"/>
+            </conv:BoolToBrushConverter.FalseBrush>
+        </conv:BoolToBrushConverter>
+
+        <Geometry x:Key="IconMinimize">M0,5 L10,5</Geometry>
+        <Geometry x:Key="IconMaximize">M0,0 L10,0 L10,10 L0,10 Z</Geometry>
+        <Geometry x:Key="IconRestore">M2,2 L10,2 L10,10 L2,10 Z M0,0 L8,0 L8,8</Geometry>
+        <Geometry x:Key="IconClose">M0,0 L10,10 M10,0 L0,10</Geometry>
+    </Window.Resources>
+
+    <Border BorderBrush="{StaticResource FieldBorderBrush}" BorderThickness="1">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="30"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- ===== Custom title bar ===== -->
+            <Grid Grid.Row="0" Background="{StaticResource BgBrush}">
+                <StackPanel Orientation="Horizontal"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Center"
+                            Margin="10,0,0,0">
+                    <TextBlock Text=""
+                               Foreground="{StaticResource HeaderYellow}"
+                               FontSize="12"
+                               VerticalAlignment="Center"/>
+                    <TextBlock Text="LTESingleLinkAntiJamMeasV1.0 "
+                               Foreground="{StaticResource TextBrush}"
+                               FontSize="11"
+                               FontWeight="SemiBold"
+                               Margin="8,0,0,0"
+                               VerticalAlignment="Center"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal"
+                            HorizontalAlignment="Right"
+                            shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                    <Button Style="{StaticResource CaptionButton}"
+                            ToolTip="缩小 (Minimize)"
+                            Click="Min_Click">
+                        <Path Data="{StaticResource IconMinimize}"
+                              Stroke="{StaticResource TextBrush}"
+                              StrokeThickness="1"
+                              Width="10" Height="10"
+                              SnapsToDevicePixels="True"/>
+                    </Button>
+                    <Button x:Name="MaxBtn"
+                            Style="{StaticResource CaptionButton}"
+                            ToolTip="放大填满 (Maximize)"
+                            Click="Max_Click">
+                        <Path x:Name="MaxIconPath"
+                              Data="{StaticResource IconMaximize}"
+                              Stroke="{StaticResource TextBrush}"
+                              StrokeThickness="1"
+                              Fill="Transparent"
+                              Width="10" Height="10"
+                              SnapsToDevicePixels="True"/>
+                    </Button>
+                    <Button Style="{StaticResource CloseCaptionButton}"
+                            ToolTip="关闭 (Close)"
+                            Click="Close_Click">
+                        <Path Data="{StaticResource IconClose}"
+                              Stroke="{StaticResource TextBrush}"
+                              StrokeThickness="1"
+                              Width="10" Height="10"
+                              SnapsToDevicePixels="True"/>
+                    </Button>
+                </StackPanel>
+            </Grid>
+
+            <!-- ===== Body ===== -->
+            <Grid Grid.Row="1" Margin="14">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <!-- Instrument connections -->
+                    <RowDefinition Height="Auto"/>
+                    <!-- Test Setup: ear side -->
+                    <RowDefinition Height="Auto"/>
+                    <!-- Test Control -->
+                    <RowDefinition Height="Auto"/>
+                    <!-- Test Plan header -->
+                    <RowDefinition Height="2*" MinHeight="120"/>
+                    <!-- Test Plan grid -->
+                    <RowDefinition Height="10"/>
+                    <!-- Splitter (drag me!) -->
+                    <RowDefinition Height="1*" MinHeight="80"/>
+                    <!-- Log (header + content) -->
+                </Grid.RowDefinitions>
+
+                <!-- ============ Section 1: Instrument Connections ============ -->
+                <StackPanel Grid.Row="0" Margin="0,0,0,10">
+                    <Grid Margin="0,0,0,6">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Style="{StaticResource SectionIcon}"
+                                   Text="⚡" Foreground="{StaticResource HeaderYellow}"/>
+                        <TextBlock Grid.Column="1" Style="{StaticResource SectionTitle}"
+                                   Text="Instruments" Foreground="{StaticResource HeaderYellow}"/>
+                        <Border Grid.Column="2" Height="1" Background="{StaticResource HeaderYellow}"
+                                Opacity="0.4" Margin="10,0,0,0" VerticalAlignment="Center"/>
+                    </Grid>
+
+                    <!-- Scope row -->
+                    <Grid Margin="0,0,0,6">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="110"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0"
+                                   Text="Oscilloscope:"
+                                   Foreground="{StaticResource LabelBrush}"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,8,0"/>
+                        <Border Grid.Column="1"
+                                Background="{StaticResource FieldBrush}"
+                                BorderBrush="{StaticResource FieldBorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="2"
+                                Padding="8,4"
+                                Margin="0,0,16,0">
+                            <TextBlock Text="{Binding ScopeAddress}"
+                                       Foreground="{StaticResource ValueBrush}"
+                                       FontFamily="Consolas"
+                                       VerticalAlignment="Center"/>
+                        </Border>
+                        <Button Grid.Column="2" Content="Connect"
+                                Style="{StaticResource GreenButton}"
+                                Command="{Binding ConnectScopeCommand}"/>
+                        <Button Grid.Column="3" Content="Disconnect"
+                                Style="{StaticResource RedButton}"
+                                Command="{Binding DisconnectScopeCommand}"/>
+                        <StackPanel Grid.Column="4" Orientation="Horizontal"
+                                    Margin="12,0,0,0" VerticalAlignment="Center">
+                            <Ellipse Style="{StaticResource StatusDot}"
+                                     Fill="{Binding ScopeConnected, Converter={StaticResource ConnDotBrush}}"/>
+                            <TextBlock Text="{Binding ScopeStatusText}"
+                                       Foreground="{StaticResource LabelBrush}"
+                                       VerticalAlignment="Center"
+                                       MaxWidth="240"
+                                       TextTrimming="CharacterEllipsis"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- CMW row -->
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="110"/>
+                            <ColumnDefinition Width="134*"/>
+                            <ColumnDefinition Width="513*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0"
+                                   Text="CMW500:"
+                                   Foreground="{StaticResource LabelBrush}"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,8,0"/>
+                        <Border Grid.Column="1"
+                                Background="{StaticResource FieldBrush}"
+                                BorderBrush="{StaticResource FieldBorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="2"
+                                Padding="8,4"
+                                Margin="0,0,16,0" Grid.ColumnSpan="2">
+                            <TextBlock Text="{Binding CmwAddress}"
+                                       Foreground="{StaticResource ValueBrush}"
+                                       FontFamily="Consolas"
+                                       VerticalAlignment="Center"/>
+                        </Border>
+                        <Button Grid.Column="3" Content="Connect"
+                                Style="{StaticResource GreenButton}"
+                                Command="{Binding ConnectCmwCommand}" Margin="3,0,3,0"/>
+                        <Button Grid.Column="4" Content="Disconnect"
+                                Style="{StaticResource RedButton}"
+                                Command="{Binding DisconnectCmwCommand}" Margin="3,0,3,0"/>
+                        <StackPanel Grid.Column="5" Orientation="Horizontal"
+                                    Margin="12,0,0,0" VerticalAlignment="Center">
+                            <Ellipse Style="{StaticResource StatusDot}"
+                                     Fill="{Binding CmwConnected, Converter={StaticResource ConnDotBrush}}"/>
+                            <TextBlock Text="{Binding CmwStatusText}"
+                                       Foreground="{StaticResource LabelBrush}"
+                                       VerticalAlignment="Center"
+                                       MaxWidth="240"
+                                       TextTrimming="CharacterEllipsis"/>
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+
+                <!-- ============ Section 2: Test Setup (Ear side) ============ -->
+                <StackPanel Grid.Row="1" Margin="0,0,0,10">
+                    <Grid Margin="0,0,0,6">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Style="{StaticResource SectionIcon}"
+                                   Text="●" Foreground="{StaticResource HeaderPurple}"/>
+                        <TextBlock Grid.Column="1" Style="{StaticResource SectionTitle}"
+                                   Text="Test Setup" Foreground="{StaticResource HeaderPurple}"/>
+                        <Border Grid.Column="2" Height="1" Background="{StaticResource HeaderPurple}"
+                                Opacity="0.4" Margin="10,0,0,0" VerticalAlignment="Center"/>
+                    </Grid>
+
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="待测耳侧:"
+                                   Foreground="{StaticResource LabelBrush}"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,12,0"/>
+                        <RadioButton GroupName="EarSide"
+                                     Content="左耳 (Left)"
+                                     Foreground="{StaticResource TextBrush}"
+                                     IsChecked="{Binding IsLeft, Mode=TwoWay}"
+                                     VerticalAlignment="Center"
+                                     Margin="0,0,20,0"/>
+                        <RadioButton GroupName="EarSide"
+                                     Content="右耳 (Right)"
+                                     Foreground="{StaticResource TextBrush}"
+                                     IsChecked="{Binding IsRight, Mode=TwoWay}"
+                                     VerticalAlignment="Center"/>
+                    </StackPanel>
+
+                    <!-- Save dir row -->
+                    <Grid Margin="0,8,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0"
+                                   Text="图片保存目录:"
+                                   Foreground="{StaticResource LabelBrush}"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,12,0"/>
+                        <Border Grid.Column="1"
+                                Background="{StaticResource FieldBrush}"
+                                BorderBrush="{StaticResource FieldBorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="2"
+                                Margin="0,0,8,0">
+                            <TextBox Text="{Binding SaveDir, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                     Background="Transparent"
+                                     Foreground="{StaticResource ValueBrush}"
+                                     BorderThickness="0"
+                                     Padding="8,4"
+                                     FontFamily="Consolas"
+                                     FontSize="11"
+                                     VerticalAlignment="Center"
+                                     ToolTip="留空或无效路径时自动使用 D:\LTESingleLinkAJM"/>
+                        </Border>
+                        <Button Grid.Column="2"
+                                Content="浏览..."
+                                Style="{StaticResource BrownButton}"
+                                Command="{Binding BrowseSaveDirCommand}"/>
+                    </Grid>
+                </StackPanel>
+
+                <!-- ============ Section 3: Test Control ============ -->
+                <StackPanel Grid.Row="2" Margin="0,0,0,10">
+                    <Grid Margin="0,0,0,6">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Style="{StaticResource SectionIcon}"
+                                   Text="✱" Foreground="{StaticResource HeaderGreen}"/>
+                        <TextBlock Grid.Column="1" Style="{StaticResource SectionTitle}"
+                                   Text="Test Control" Foreground="{StaticResource HeaderGreen}"/>
+                        <Border Grid.Column="2" Height="1" Background="{StaticResource HeaderGreen}"
+                                Opacity="0.4" Margin="10,0,0,0" VerticalAlignment="Center"/>
+                    </Grid>
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Grid.Column="0" Text="Status:"
+                                   Foreground="{StaticResource LabelBrush}"
+                                   Margin="0,0,5,0"
+                                   VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="1" Text="{Binding StatusText}"
+                                   Foreground="{StaticResource ValueBrush}"
+                                   FontWeight="Bold"
+                                   VerticalAlignment="Center"/>
+
+                        <StackPanel Grid.Column="2" Orientation="Horizontal"
+                                    VerticalAlignment="Center" Margin="18,0,16,0">
+                            <ProgressBar Width="360" Height="8"
+                                         Value="{Binding Progress, Mode=OneWay}"
+                                         Maximum="{Binding Total, Mode=OneWay}"
+                                         Background="#22FFFFFF"
+                                         Foreground="{StaticResource HeaderBlue}"
+                                         BorderThickness="0"/>
+                            <TextBlock Foreground="{StaticResource LabelBrush}"
+                                       VerticalAlignment="Center"
+                                       Margin="8,0,0,0">
+                                <Run Text="{Binding Progress, Mode=OneWay}"/>
+                                <Run Text=" / "/>
+                                <Run Text="{Binding Total, Mode=OneWay}"/>
+                            </TextBlock>
+                        </StackPanel>
+
+                        <Button Grid.Column="3" Content="▶  Start"
+                                Style="{StaticResource BlueButton}"
+                                Command="{Binding StartCommand}"/>
+                        <Button Grid.Column="4"
+                                Content="{Binding PauseButtonText}"
+                                Style="{StaticResource BrownButton}"
+                                Command="{Binding PauseCommand}"
+                                Margin="6,0,0,0"/>
+                        <Button Grid.Column="5" Content="⏹  Stop"
+                                Style="{StaticResource StopButton}"
+                                Command="{Binding StopCommand}"
+                                Margin="6,0,0,0"/>
+                    </Grid>
+                </StackPanel>
+
+                <!-- ============ Section 4: Test Plan ============ -->
+                <Grid Grid.Row="3" Margin="0,0,0,6">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" Style="{StaticResource SectionIcon}"
+                               Text="▤" Foreground="{StaticResource HeaderBlue}"/>
+                    <TextBlock Grid.Column="1" Style="{StaticResource SectionTitle}"
+                               Text="Test Plan" Foreground="{StaticResource HeaderBlue}"/>
+                    <Border Grid.Column="2" Height="1" Background="{StaticResource HeaderBlue}"
+                            Opacity="0.4" Margin="10,0,0,0" VerticalAlignment="Center"/>
+                </Grid>
+
+                <Border Grid.Row="4"
+                        Background="{StaticResource FieldBrushAlt}"
+                        BorderBrush="{StaticResource FieldBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="2">
+                    <DataGrid ItemsSource="{Binding Items}"
+                              SelectedItem="{Binding SelectedItem, Mode=TwoWay}"
+                              AutoGenerateColumns="False"
+                              HeadersVisibility="Column"
+                              GridLinesVisibility="Horizontal"
+                              HorizontalGridLinesBrush="#22FFFFFF"
+                              Background="Transparent"
+                              RowBackground="Transparent"
+                              AlternatingRowBackground="#06FFFFFF"
+                              Foreground="{StaticResource ValueBrush}"
+                              BorderThickness="0"
+                              CanUserAddRows="False"
+                              CanUserDeleteRows="False"
+                              IsReadOnly="True"
+                              SelectionMode="Single"
+                              RowHeight="27"
+                              FontSize="11">
+                        <DataGrid.Resources>
+                            <Style TargetType="DataGridColumnHeader">
+                                <Setter Property="Background" Value="Transparent"/>
+                                <Setter Property="Foreground" Value="{StaticResource HeaderYellow}"/>
+                                <Setter Property="FontWeight" Value="Bold"/>
+                                <Setter Property="FontSize" Value="11"/>
+                                <Setter Property="Padding" Value="8,6"/>
+                                <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                                <Setter Property="BorderBrush" Value="#33FFFFFF"/>
+                                <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                            </Style>
+                            <Style TargetType="DataGridCell">
+                                <Setter Property="BorderThickness" Value="0"/>
+                                <Setter Property="Padding" Value="8,0"/>
+                                <Setter Property="Foreground" Value="{StaticResource ValueBrush}"/>
+                                <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="DataGridCell">
+                                            <Border x:Name="Bd"
+                                                    Background="{TemplateBinding Background}"
+                                                    Padding="{TemplateBinding Padding}"
+                                                    SnapsToDevicePixels="True">
+                                                <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                                  VerticalAlignment="Center"
+                                                                  SnapsToDevicePixels="True"/>
+                                            </Border>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsSelected" Value="True">
+                                                    <Setter TargetName="Bd" Property="Background" Value="#3329B6F6"/>
+                                                    <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                            <Style TargetType="DataGridRow">
+                                <Setter Property="Background"
+                                        Value="{Binding IsCurrent, Converter={StaticResource RowHighlight}}"/>
+                            </Style>
+
+                            <!-- 绿色勾选 checkbox: 未选 = 空框边框灰; 选中 = 绿框 + 绿色对勾。
+                                 CheckBox 拉伸填满整个 cell (whole hit-target), 视觉方框居中在中间;
+                                 修掉 WPF 常见坑: 之前只 18×18 命中区, 点 cell 空白区不 toggle -->
+                            <Style x:Key="GreenCheck" TargetType="CheckBox">
+                                <Setter Property="HorizontalAlignment" Value="Stretch"/>
+                                <Setter Property="VerticalAlignment" Value="Stretch"/>
+                                <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                                <Setter Property="Cursor" Value="Hand"/>
+                                <Setter Property="Focusable" Value="False"/>
+                                <Setter Property="Background" Value="Transparent"/>
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="CheckBox">
+                                            <!-- 整个可视区都是 hit-test 目标, 点击 cell 任意位置都 toggle -->
+                                            <Border Background="Transparent">
+                                                <Grid HorizontalAlignment="Center"
+                                                      VerticalAlignment="Center"
+                                                      Width="18" Height="18">
+                                                    <Border x:Name="Box"
+                                                            Width="16" Height="16"
+                                                            BorderThickness="1.5"
+                                                            BorderBrush="{StaticResource LabelBrush}"
+                                                            Background="Transparent"
+                                                            CornerRadius="2"
+                                                            HorizontalAlignment="Center"
+                                                            VerticalAlignment="Center"/>
+                                                    <Path x:Name="Tick"
+                                                          Data="M3,8 L7,12 L14,4"
+                                                          Stroke="{StaticResource HeaderGreen}"
+                                                          StrokeThickness="2"
+                                                          StrokeStartLineCap="Round"
+                                                          StrokeEndLineCap="Round"
+                                                          StrokeLineJoin="Round"
+                                                          Visibility="Collapsed"
+                                                          Width="17" Height="16"
+                                                          Stretch="None"
+                                                          HorizontalAlignment="Center"
+                                                          VerticalAlignment="Center"
+                                                          SnapsToDevicePixels="True"/>
+                                                </Grid>
+                                            </Border>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsChecked" Value="True">
+                                                    <Setter TargetName="Tick" Property="Visibility" Value="Visible"/>
+                                                    <Setter TargetName="Box" Property="BorderBrush" Value="{StaticResource HeaderGreen}"/>
+                                                </Trigger>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="Box" Property="BorderBrush" Value="{StaticResource HeaderGreen}"/>
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </DataGrid.Resources>
+                        <DataGrid.Columns>
+                            <!-- 首列: 表头 checkbox = 全选, 每行 checkbox = 是否参与本轮测试 -->
+                            <DataGridTemplateColumn Width="45" CanUserSort="False" CanUserResize="False">
+                                <DataGridTemplateColumn.HeaderTemplate>
+                                    <DataTemplate>
+                                        <CheckBox Style="{StaticResource GreenCheck}"
+                                                  IsChecked="{Binding DataContext.AllSelected, RelativeSource={RelativeSource AncestorType=DataGrid}, Mode=TwoWay}"
+                                                  ToolTip="全选 / 全不选"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.HeaderTemplate>
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <CheckBox Style="{StaticResource GreenCheck}"
+                                                  IsChecked="{Binding Selected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                  ToolTip="本轮是否测试该信道"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTextColumn Header="Band"                 Binding="{Binding Band}"         Width="70"/>
+                            <DataGridTextColumn Header="信道类型"              Binding="{Binding ChannelType}"  Width="85"/>
+                            <DataGridTextColumn Header="信道 (EARFCN)"         Binding="{Binding Earfcn}"       Width="120"/>
+                            <DataGridTemplateColumn Header="Status" Width="110">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal"
+                                                    HorizontalAlignment="Center"
+                                                    VerticalAlignment="Center">
+                                            <Ellipse Style="{StaticResource StatusDot}"
+                                                     Fill="{Binding Status, Converter={StaticResource StatusBrush}}"/>
+                                            <TextBlock Text="{Binding StatusText}"
+                                                       Foreground="{StaticResource TextBrush}"/>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="TX 波形" Width="95">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding DataContext.SideTxLabel, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                   Foreground="{Binding TxCaptured, Converter={StaticResource CapturedBrush}}"
+                                                   FontWeight="SemiBold"
+                                                   HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="RX 波形" Width="95">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding DataContext.SideRxLabel, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                   Foreground="{Binding RxCaptured, Converter={StaticResource CapturedBrush}}"
+                                                   FontWeight="SemiBold"
+                                                   HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTextColumn Header="Message" Binding="{Binding Message}" Width="*"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Border>
+
+                <!-- ============ Section 5: Log ============ -->
+                <!-- Row 5: draggable splitter between TestPlan (row 4) and Log wrapper (row 6).
+                     Custom template gives it a clear "grip" bar look so users see it. -->
+                <GridSplitter Grid.Row="5"
+                              Height="10"
+                              HorizontalAlignment="Stretch"
+                              VerticalAlignment="Stretch"
+                              ShowsPreview="False"
+                              ResizeBehavior="PreviousAndNext"
+                              ResizeDirection="Rows"
+                              Cursor="SizeNS"
+                              ToolTip="拖动以调整 Test Plan / Log 高度">
+                    <GridSplitter.Template>
+                        <ControlTemplate TargetType="GridSplitter">
+                            <Border x:Name="Bd"
+                                    Background="{StaticResource FieldBorderBrush}"
+                                    CornerRadius="1">
+                                <!-- Center dots as visual grip cue -->
+                                <StackPanel Orientation="Horizontal"
+                                            HorizontalAlignment="Center"
+                                            VerticalAlignment="Center">
+                                    <Ellipse Width="3" Height="3" Fill="{StaticResource LabelBrush}" Margin="2,0"/>
+                                    <Ellipse Width="3" Height="3" Fill="{StaticResource LabelBrush}" Margin="2,0"/>
+                                    <Ellipse Width="3" Height="3" Fill="{StaticResource LabelBrush}" Margin="2,0"/>
+                                    <Ellipse Width="3" Height="3" Fill="{StaticResource LabelBrush}" Margin="2,0"/>
+                                    <Ellipse Width="3" Height="3" Fill="{StaticResource LabelBrush}" Margin="2,0"/>
+                                </StackPanel>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Bd" Property="Background" Value="{StaticResource HeaderBlue}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </GridSplitter.Template>
+                </GridSplitter>
+
+                <!-- Log wrapper: header + content live in the same star-sized row
+                     so the splitter can freely reallocate space between TestPlan
+                     and the whole Log block. -->
+                <Grid Grid.Row="6">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <!-- Log header -->
+                        <RowDefinition Height="*"/>
+                        <!-- Log content -->
+                    </Grid.RowDefinitions>
+
+                    <Grid Grid.Row="0" Margin="0,0,0,6">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Style="{StaticResource SectionIcon}"
+                                   Text="▤" Foreground="{StaticResource HeaderPurple}"/>
+                        <TextBlock Grid.Column="1" Style="{StaticResource SectionTitle}"
+                                   Text="Log" Foreground="{StaticResource HeaderPurple}"/>
+                        <Border Grid.Column="2" Height="1" Background="{StaticResource HeaderPurple}"
+                                Opacity="0.4" Margin="10,0,10,0" VerticalAlignment="Center"/>
+                        <Button Grid.Column="3" Content="导出"
+                                Style="{StaticResource BlueButton}"
+                                Command="{Binding ExportLogCommand}"
+                                ToolTip="把 Log 内容存成 .txt"/>
+                        <Button Grid.Column="4" Content="导出 SCPI"
+                                Style="{StaticResource BlueButton}"
+                                Command="{Binding ExportScpiLogCommand}"
+                                Margin="6,0,0,0"
+                                ToolTip="仅导出 CMW / 示波器的 SCPI 收发原文, 用于调试超时等问题"/>
+                        <Button Grid.Column="5" Content="清空"
+                                Style="{StaticResource BrownButton}"
+                                Command="{Binding ClearLogCommand}"
+                                Margin="6,0,0,0"/>
+                    </Grid>
+
+                    <Border Grid.Row="1"
+                            Background="{StaticResource FieldBrushAlt}"
+                            BorderBrush="{StaticResource FieldBorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="2"
+                            Padding="8">
+                        <TextBox Text="{Binding Log, Mode=OneWay}"
+                                 IsReadOnly="True"
+                                 Background="Transparent"
+                                 Foreground="{StaticResource ValueBrush}"
+                                 BorderThickness="0"
+                                 FontFamily="Consolas"
+                                 FontSize="11"
+                                 VerticalScrollBarVisibility="Auto"
+                                 TextWrapping="NoWrap"
+                                 x:Name="LogBox"
+                                 TextChanged="LogBox_TextChanged"/>
+                    </Border>
+                </Grid>
+            </Grid>
+        </Grid>
+    </Border>
+</Window>

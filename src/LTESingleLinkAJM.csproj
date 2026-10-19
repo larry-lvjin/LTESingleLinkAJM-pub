@@ -1,0 +1,59 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>LTESingleLinkAJM</RootNamespace>
+    <AssemblyName>LTESingleLinkAJM</AssemblyName>
+    <LangVersion>latest</LangVersion>
+    <ApplicationIcon>LTESingleLinkAJM.ico</ApplicationIcon>
+    <!-- 只保留中性(英文)回退, 砍掉其它卫星语言资源: 本程序中文 UI 文本在 XAML/
+         中性资源里(随主程序集), 不依赖卫星程序集; 削掉可减小单文件体积。 -->
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+  </PropertyGroup>
+
+  <!-- Publish defaults: ReadyToRun + Self-Contained + Single-file.
+       These properties only take effect during `dotnet publish`.
+       Recommended publish command:
+         dotnet publish -c Release -r win-x64 /p:PublishProfile=Properties/PublishProfiles/win-x64.pubxml
+  -->
+  <PropertyGroup>
+    <PublishSingleFile>true</PublishSingleFile>
+    <PublishReadyToRun>true</PublishReadyToRun>
+    <PublishSelfContained>true</PublishSelfContained>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <DebugType Condition="'$(Configuration)' == 'Release'">None</DebugType>
+    <DebugSymbols Condition="'$(Configuration)' == 'Release'">false</DebugSymbols>
+  </PropertyGroup>
+
+  <!-- Embed build UTC timestamp as an AssemblyMetadata attribute.
+       Property functions are re-evaluated on every build. -->
+  <PropertyGroup>
+    <_BuildUtc>$([System.DateTime]::UtcNow.ToString(o))</_BuildUtc>
+  </PropertyGroup>
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>BuildUtc</_Parameter1>
+      <_Parameter2>$(_BuildUtc)</_Parameter2>
+    </AssemblyAttribute>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="LTESingleLinkAJM.ico" />
+  </ItemGroup>
+
+  <!-- NationalInstruments.Visa 直接 P/Invoke NI-VISA 的 visa32.dll, 跳过
+       IVI 抽象层的 "vendor discovery" 机制 (那一层依赖注册表探针, 常年环境
+       易碎)。要求机器上装了 NI-VISA runtime。传递依赖会带进 Ivi.Visa
+       接口, 因此 IMessageBasedSession 等接口仍可用。
+       System.IO.Ports 是 SIM Simulator 客户端要用的。 -->
+  <ItemGroup>
+    <PackageReference Include="NationalInstruments.Visa" Version="25.5.0.13" />
+    <PackageReference Include="System.IO.Ports" Version="9.0.0" />
+    <PackageReference Include="System.Management" Version="9.0.0" />
+  </ItemGroup>
+
+</Project>
