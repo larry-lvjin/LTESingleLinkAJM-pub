@@ -45,10 +45,8 @@ namespace LTESingleLinkAJM.Services
 
         public void Dispose()
         {
-            _stop.Set();
-            // 即使 Join 超时也无碍: 线程退出时 Windows 会自动清除其执行状态
-            _thread.Join(1000);
-            _stop.Dispose();
+            // 实现细节未公开（算法核心）
+            throw new NotImplementedException("该方法的实现不在开源范围内");
         }
     }
 }

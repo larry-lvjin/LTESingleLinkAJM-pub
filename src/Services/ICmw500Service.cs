@@ -35,7 +35,7 @@ namespace LTESingleLinkAJM.Services
         /// <summary>查询 LTE 小区当前 RRC 状态。</summary>
         Task<RrcState> QueryRrcStateAsync(CancellationToken ct = default);
 
-        /// <summary>关闭再打开 LTE 小区 (SOUR:LTE:SIGN1:CELL:STAT OFF -> ON),
+        /// 该步骤具体实现与仪器指令未公开
         /// 用于把 DUT 从 IDLE 里"踢"出来重连。</summary>
         Task CycleCellAsync(CancellationToken ct = default);
 
